@@ -1,5 +1,7 @@
 // Purchase Order & Invoice Screen Module
 import { store } from '../store.js';
+import { jsPDF } from 'jspdf';
+import html2canvas from 'html2canvas';
 
 export default {
   render(container, params) {
@@ -225,7 +227,7 @@ export default {
           </div>
         </div>
 
-        <div class="document-container">
+        <div class="document-container doc-content">
           <div class="doc-watermark">Purchase Order</div>
           <div class="document-header">
             <div class="doc-company-info">
@@ -337,7 +339,7 @@ export default {
           </div>
         </div>
 
-        <div class="document-container">
+        <div class="document-container doc-content">
           <div class="doc-watermark" style="color: rgba(16, 185, 129, 0.015);">${inv.status}</div>
           <div class="document-header">
             <div class="doc-company-info">
@@ -457,7 +459,6 @@ export default {
   bindDocEvents(container, docId, type, partnerName, totalVal) {
     const backBtn = container.querySelector('.btn-back-hub');
     const printBtn = container.querySelector('.btn-print-doc');
-    const downloadBtn = container.querySelector('.btn-download-doc');
     const emailBtn = container.querySelector('.btn-email-doc');
 
     backBtn.addEventListener('click', () => {
@@ -474,31 +475,45 @@ export default {
       window.print();
     });
 
-    // 2. Download Simulation (generates a plain text representation download)
-    downloadBtn.addEventListener('click', () => {
-      const title = type === 'po' ? 'Purchase Order' : 'Commercial Invoice';
-      const fileContent = `
-=============================================
-${title} - ${docId}
-=============================================
-Vendor Bridge ERP Systems
-Date: ${new Date().toISOString().split('T')[0]}
-Partner: ${partnerName}
-Value: ₹${totalVal.toFixed(2)} (Incl. 18% GST)
-=============================================
-This is a simulated digital document copy.
-      `;
-      
-      const blob = new Blob([fileContent], { type: 'text/plain' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = `${docId}_Copy.txt`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+    // 2. Download Button Actions (PDF Generation)
+    const downloadBtns = container.querySelectorAll('.btn-download-doc');
+    downloadBtns.forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const originalText = btn.innerText;
+        btn.innerText = '⏳ Generating PDF...';
+        btn.disabled = true;
+        
+        try {
+          // Select the document content area to turn into PDF
+          const docContent = container.querySelector('.doc-content');
+          
+          // Generate high quality canvas
+          const canvas = await html2canvas(docContent, { 
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff'
+          });
+          
+          const imgData = canvas.toDataURL('image/png');
+          
+          // A4 dimensions in mm
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+          
+          // Add image to PDF
+          pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+          pdf.save(`${docId}.pdf`);
 
-      store.logActivity(store.getCurrentUser().name, `Download ${type.toUpperCase()}`, `Downloaded copy of ${docId}`);
-      alert(`Simulation: File "${docId}_Copy.txt" compiled and downloaded to disk.`);
+          store.logActivity(store.getCurrentUser().name, `Download ${type.toUpperCase()}`, `Downloaded PDF of ${docId}`);
+        } catch (error) {
+          console.error('PDF Generation Error:', error);
+          alert('Failed to generate PDF. Please try again.');
+        } finally {
+          btn.innerText = originalText;
+          btn.disabled = false;
+        }
+      });
     });
 
     // 3. Email Simulation (only invoices support email option in details bar)
