@@ -54,6 +54,16 @@ export default {
                 <p id="auth-subtitle">Sign in to your organization workspace</p>
               </div>
 
+              <!-- Hackathon Judges Box -->
+              <div id="hackathon-demo-box" style="background-color: var(--bg-hover); padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; border: 1px dashed var(--color-primary);">
+                <strong style="color: var(--color-primary);">🛠️ Hackathon Judges:</strong><br/>
+                <div style="margin-top: 6px; color: var(--text-main);">
+                  Email: <b>admin@vendorbridge.com</b><br/>
+                  Pass: <b>admin123</b>
+                </div>
+                <button type="button" id="btn-autofill-admin" class="btn btn-secondary btn-sm" style="margin-top: 10px; width: 100%; font-size: 11px; padding: 6px;">Auto-fill Admin Credentials</button>
+              </div>
+
               <!-- Alert message -->
               <div id="auth-alert" style="display: none; padding: 10px 14px; margin-bottom: 20px; border-radius: 8px; font-size: 13px; font-weight: 500;"></div>
 
@@ -267,6 +277,7 @@ export default {
         currentMode = 'signup';
         loginForm.style.display = 'none';
         forgotForm.style.display = 'none';
+        container.querySelector('#hackathon-demo-box').style.display = 'none';
         signupForm.style.display = 'block';
         authSubtitle.innerText = 'Create your secure procurement profile';
         footerPrompt.innerText = 'Already have an account?';
@@ -274,6 +285,7 @@ export default {
       } else {
         currentMode = 'login';
         loginForm.style.display = 'block';
+        container.querySelector('#hackathon-demo-box').style.display = 'block';
         signupForm.style.display = 'none';
         forgotForm.style.display = 'none';
         authSubtitle.innerText = 'Sign in to your organization workspace';
@@ -288,11 +300,22 @@ export default {
       currentMode = 'forgot';
       loginForm.style.display = 'none';
       signupForm.style.display = 'none';
+      container.querySelector('#hackathon-demo-box').style.display = 'none';
       forgotForm.style.display = 'block';
       authSubtitle.innerText = 'Recover your account password';
       footerPrompt.innerText = 'Remember your password?';
       authToggleLink.innerText = 'Sign In';
     });
+
+    const btnAutofillAdmin = container.querySelector('#btn-autofill-admin');
+    if (btnAutofillAdmin) {
+      btnAutofillAdmin.addEventListener('click', () => {
+        container.querySelector('#email').value = 'admin@vendorbridge.com';
+        container.querySelector('#password').value = 'admin123';
+        const adminRoleBtn = container.querySelector('.login-role-btn[data-role="admin"]');
+        if (adminRoleBtn) adminRoleBtn.click();
+      });
+    }
 
     // Submit actions
     loginForm.addEventListener('submit', (e) => {
